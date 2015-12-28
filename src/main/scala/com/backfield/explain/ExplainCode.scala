@@ -22,54 +22,72 @@ object ExplainCode {
     Console.BLUE
   )
 
-  def pause = {
+  def pause : Unit = {
     StdIn.readLine()
   }
 
-  def explain[A](name : String, f : => A, pause_? : Boolean, ex : A => Unit, ec : ExplainCode) : Unit = macro explainWithNameImpl[A]
+  def explain[A](name : String, f : => A, ex : A => Unit, ec : ExplainCode) : Unit = macro explainWithNameImpl[A]
 
-  def explain[A](f : => A, pause_? : Boolean, ex : A => Unit, ec : ExplainCode) : Unit = macro explainWithoutNameImpl[A]
+  def explain[A](f : => A, ex : A => Unit, ec : ExplainCode) : Unit = macro explainWithoutNameImpl[A]
 
-  def buildTopLine(name : String) : StringBuilder = {
-    new StringBuilder().
-      append("----[").
-      append(name).
-      append("]----")
+  def getSeparator(line : String) : String = {
+    val maxLine = line.split("\n").maxBy(_.length).length
+    (0 until maxLine).map(_ => "-").mkString
   }
 
-  def execute[A](name : String, pause_? : Boolean, input : A, ex : A => Unit, ec : ExplainCode) : Unit = {
-    val topLine = buildTopLine(name)
-    print(s"${colors(ec.level)}${topLine.toString}${Console.RESET}")
-    if(pause_?) { pause } else { println() }
+  def buildTopLine(name : String) : StringBuilder = {
+    val isMultiLine = name.contains("\n")
+    val separator = getSeparator(name)
+    val sb = new StringBuilder()
+    if(isMultiLine) {
+      sb.append(separator)
+      sb.append("\n")
+    } else {
+      sb.append("----")
+      sb.append("[")
+    }
+    sb.append(name)
+    if(isMultiLine) {
+      sb.append("\n")
+      sb.append(separator)
+    } else {
+      sb.append("]")
+      sb.append("----")
+    }
+  }
+
+  def execute[A](name : String, input : A, ex : A => Unit, ec : ExplainCode) : Unit = {
+    val topLine = buildTopLine(name).toString
+    print(s"${colors(ec.level)}$topLine${Console.RESET}")
+    pause
     ec.level = ec.level + 1
     ex(input)
     ec.level = ec.level - 1
-    println(s"${colors(ec.level)}${topLine.indices.map(_ => "-").mkString}${Console.RESET}")
+    val separator = getSeparator(topLine)
+    println(s"${colors(ec.level)}$separator${Console.RESET}")
   }
 
   def explainWithNameImpl[A : c.WeakTypeTag](c : whitebox.Context)(
     name : c.Expr[String],
     f : c.Expr[A],
-    pause_? : c.Expr[Boolean],
     ex : c.Expr[A => Unit],
     ec : c.Expr[ExplainCode]
   ) : c.Expr[Unit] = {
     import c.universe._
     reify {
-      execute(name.splice, pause_?.splice, f.splice, ex.splice, ec.splice)
+      execute(name.splice, f.splice, ex.splice, ec.splice)
     }
   }
 
   def explainWithoutNameImpl[A : c.WeakTypeTag](c : whitebox.Context)(
     f : c.Expr[A],
-    pause_? : c.Expr[Boolean],
     ex : c.Expr[A => Unit],
     ec : c.Expr[ExplainCode]
   ) : c.Expr[Unit] = {
     import c.universe._
     val tree = c.Expr[String](Literal(Constant(f.tree.toString)))
     reify {
-      execute(tree.splice, pause_?.splice, f.splice, ex.splice, ec.splice)
+      execute(tree.splice, f.splice, ex.splice, ec.splice)
     }
   }
 
