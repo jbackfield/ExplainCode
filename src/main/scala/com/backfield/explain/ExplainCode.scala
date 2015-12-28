@@ -1,9 +1,12 @@
 package com.backfield.explain
 
+import java.util.function.{Consumer, Supplier}
+
 import scala.io.StdIn
 import scala.reflect.macros.whitebox
 
 import scala.language.experimental.macros
+import scala.runtime.BoxedUnit
 
 case class ExplainCode(var level : Int = 0)
 
@@ -72,27 +75,47 @@ object ExplainCode {
 
   def iterate(commands : List[Int] = List()) : List[Int] = {
     print("Choice: ")
-    val input = StdIn.readInt()
-    if(entryPoints.length < input) {
-      println(s"Invalid choice $input")
-      iterate(commands)
-    } else if(input == -1) {
-      println("Goodbye")
-      commands
-    } else if(input == 0) {
-      var i = 1
-      entryPoints.foreach { ep =>
-        val done = if(ep.done) { s"${Console.GREEN}√${Console.RESET}" } else { s"${Console.RED}-${Console.RESET}" }
-        println(s"$i. ${ep.name}...[$done]")
-        i = i + 1
+    val line = StdIn.readLine()
+    try {
+      val input = line.trim.toInt
+      if(entryPoints.length < input) {
+        println(s"Invalid choice $input")
+        iterate(commands)
+      } else if(input == -1) {
+        println("Goodbye")
+        commands
+      } else if(input == 0) {
+        var i = 1
+        entryPoints.foreach { ep =>
+          val done = if (ep.done) {
+            s"${Console.GREEN}√${Console.RESET}"
+          } else {
+            s"${Console.RED}-${Console.RESET}"
+          }
+          println(s"$i. ${ep.name}...[$done]")
+          i = i + 1
+        }
+        iterate(commands)
+      } else if(input < -1) {
+        println(s"Invalid choice $input")
+        iterate(commands)
+      } else {
+        val entryPoint = entryPoints(input - 1)
+        println(s"${Console.GREEN}${entryPoint.name}${Console.RESET}")
+        entryPoint.execute()
+        iterate(input :: commands)
       }
-      iterate(commands)
-    } else {
-      val entryPoint = entryPoints(input - 1)
-      println(s"${Console.GREEN}${entryPoint.name}${Console.RESET}")
-      entryPoint.execute()
-      iterate(input :: commands)
+    } catch {
+      case _ : Throwable => {
+        println(s"Invalid choice")
+        iterate(commands)
+      }
     }
+
+  }
+
+  def addExample(example : Example) = {
+    entryPoints = entryPoints ::: List(example)
   }
 
 }
