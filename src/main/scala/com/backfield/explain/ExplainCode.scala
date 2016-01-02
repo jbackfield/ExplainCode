@@ -19,7 +19,9 @@ object ExplainCode {
   val colors = List(
     Console.GREEN,
     Console.RED,
-    Console.BLUE
+    Console.BLUE,
+    Console.CYAN,
+    Console.WHITE
   )
 
   def pause : Unit = {
@@ -124,8 +126,9 @@ object ExplainCode {
         iterate(input :: commands)
       }
     } catch {
-      case _ : Throwable => {
+      case ec : Throwable => {
         println(s"Invalid choice")
+        ec.printStackTrace()
         iterate(commands)
       }
     }
