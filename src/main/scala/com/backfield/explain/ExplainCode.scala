@@ -93,37 +93,55 @@ object ExplainCode {
     }
   }
 
+  def printEntryPoints() = {
+    var i = 1
+    entryPoints.foreach { ep =>
+      val done = if (ep.done) {
+        s"${Console.GREEN}√${Console.RESET}"
+      } else {
+        s"${Console.RED}-${Console.RESET}"
+      }
+      println(s"$i. ${ep.name}...[$done]")
+      i = i + 1
+    }
+  }
+
   def iterate(commands : List[Int] = List()) : List[Int] = {
+    ExplainCode.pause
+    printEntryPoints()
     print("Choice: ")
     val line = StdIn.readLine()
     try {
-      val input = line.trim.toInt
-      if(entryPoints.length < input) {
-        println(s"Invalid choice $input")
-        iterate(commands)
-      } else if(input == -1) {
-        println("Goodbye")
-        commands
-      } else if(input == 0) {
-        var i = 1
-        entryPoints.foreach { ep =>
-          val done = if (ep.done) {
-            s"${Console.GREEN}√${Console.RESET}"
-          } else {
-            s"${Console.RED}-${Console.RESET}"
+      val l = line.trim
+      if(l == "n") {
+        entryPoints.find(_.done != true) match {
+          case Some(entryPoint) => {
+            println(s"${Console.GREEN}${entryPoint.name}${Console.RESET}")
+            entryPoint.execute()
+            iterate(0 :: commands)
           }
-          println(s"$i. ${ep.name}...[$done]")
-          i = i + 1
+          case _ => iterate(commands)
         }
-        iterate(commands)
-      } else if(input < -1) {
-        println(s"Invalid choice $input")
-        iterate(commands)
       } else {
-        val entryPoint = entryPoints(input - 1)
-        println(s"${Console.GREEN}${entryPoint.name}${Console.RESET}")
-        entryPoint.execute()
-        iterate(input :: commands)
+        val input = line.trim.toInt
+        if (entryPoints.length < input) {
+          println(s"Invalid choice $input")
+          iterate(commands)
+        } else if (input == -1) {
+          println("Goodbye")
+          commands
+        } else if (input == 0) {
+          printEntryPoints()
+          iterate(commands)
+        } else if (input < -1) {
+          println(s"Invalid choice $input")
+          iterate(commands)
+        } else {
+          val entryPoint = entryPoints(input - 1)
+          println(s"${Console.GREEN}${entryPoint.name}${Console.RESET}")
+          entryPoint.execute()
+          iterate(input :: commands)
+        }
       }
     } catch {
       case ec : Throwable => {
