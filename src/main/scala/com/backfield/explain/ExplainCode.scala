@@ -107,7 +107,7 @@ object ExplainCode {
   }
 
   def iterate(commands : List[Int] = List()) : List[Int] = {
-    ExplainCode.pause
+    if(commands.nonEmpty) ExplainCode.pause
     printEntryPoints()
     print("Choice: ")
     val line = StdIn.readLine()
@@ -146,7 +146,6 @@ object ExplainCode {
     } catch {
       case ec : Throwable => {
         println(s"Invalid choice")
-        ec.printStackTrace()
         iterate(commands)
       }
     }
